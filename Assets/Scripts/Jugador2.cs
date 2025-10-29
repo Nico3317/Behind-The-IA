@@ -1,115 +1,137 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
 public class Jugador2 : MonoBehaviour
 {
     private CharacterController control;
-    private Vector3 direction; // Vector principal que contiene X, Y (salto/gravedad), Z
-    private bool grunding;
-    private Transform cameraTransform;
+    private Transform cam;
+    private Vector3 direction;
+    private bool grounded;
+    private bool onWall;
+    private Vector3 wallNormal;
+    private float lockRotationTimer;
 
-    [Header("Fisicas")]
+    public float speed = 7f;
     private float gravity = -7.8f;
-    public float speed = 5f;
-    public float jumpforce = .80f;
-    public float jumpforce2 = 1f;
-    public float jumpforce3 = 1.1f;
-    public int jumpcount = 0;
 
-    [Header("Encadenamiento salto")]
-    public float jumptime = 0.1f;
+    public float jump1 = 0.8f;
+    public float jump2 = 1.0f;
+    public float jump3 = 1.1f;
+    public float jumpChainTime = 0.15f;
+    private int jumpCount;
     private float jumpResetTimer;
+
+    public float wallJumpForce = 6f;
+    public float wallJumpUp = 5f;
+    public float wallSlideSpeed = -1.4f;
+    private float wallTimer;
 
     void Awake()
     {
-        this.control = GetComponent<CharacterController>();
-        cameraTransform = Camera.main.transform;
+        control = GetComponent<CharacterController>();
+        cam = Camera.main.transform;
     }
 
     void Update()
     {
-        // 1. OBTENER ESTADO E INPUT
-        this.grunding = this.control.isGrounded;
-        float horizontalInput = Input.GetAxis("Horizontal");
-        float verticalInput = Input.GetAxis("Vertical");
+        grounded = control.isGrounded;
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
 
-        // 2. MANEJAR SALTO Y GRAVEDAD
-        // Esta función modifica 'this.direction.y' con la física de salto y gravedad.
-        Salto();
+        if (grounded && direction.y < 0)
+            direction.y = -2f;
 
-        // 3. CALCULAR DIRECCIÓN HORIZONTAL BASADA EN LA CÁMARA
-        Vector3 camForward = cameraTransform.forward;
-        Vector3 camRight = cameraTransform.right;
-        camForward.y = 0;
-        camRight.y = 0;
-        camForward.Normalize();
-        camRight.Normalize();
-
-        // 'moveDirection' es solo para el cálculo horizontal y la rotación.
-        Vector3 moveDirection = (camForward * verticalInput) + (camRight * horizontalInput);
-
-        // 4. MANEJAR LA ROTACIÓN
-        if (moveDirection.magnitude >= 0.1f)
+        if (grounded)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+            if (jumpResetTimer > 0) jumpResetTimer -= Time.deltaTime;
+            else if (jumpCount > 0) jumpCount = 0;
         }
 
-        // 5. APLICAR MOVIMIENTO (LÓGICA RESTAURADA DE JUGADOR.CS)
-        // Asignamos el movimiento horizontal calculado (relativo a la cámara)
-        // a nuestro vector 'direction', que ya contiene la velocidad vertical del Salto().
-        this.direction.x = moveDirection.x;
-        this.direction.z = moveDirection.z;
-
-        // Movemos el personaje usando el vector 'direction' unificado,
-        // multiplicado por la velocidad, tal como en el script original.
-        this.control.Move(this.direction * speed * Time.deltaTime);
-
-        Debug.Log(this.jumpcount);
-    }
-
-    void Salto()
-    {
-        if (this.grunding)
+        if (Input.GetButtonDown("Jump"))
         {
-            if (jumpcount > 0)
-            {
-                jumpResetTimer -= Time.deltaTime;
-                if (jumpResetTimer <= 0f)
-                {
-                    jumpcount = 0;
-                }
-            }
+            if (onWall && !grounded)
+                WallJump();
+            else if (grounded)
+                NormalJump();
+        }
 
-            if (this.direction.y < 0)
-            {
-                this.direction.y = -1f;
-            }
-
-            if (Input.GetButtonDown("Jump"))
-            {
-                jumpResetTimer = jumptime;
-
-                if (this.jumpcount == 2)
-                {
-                    this.direction.y = Mathf.Sqrt(this.jumpforce3 * -2.0f * this.gravity);
-                    this.jumpcount = 0;
-                }
-                else if (this.jumpcount == 1)
-                {
-                    this.direction.y = Mathf.Sqrt(this.jumpforce2 * -2.0f * this.gravity);
-                    this.jumpcount++;
-                }
-                else
-                {
-                    this.direction.y = Mathf.Sqrt(this.jumpforce * -2.0f * this.gravity);
-                    this.jumpcount++;
-                }
-            }
+        if (onWall && !grounded && direction.y < 0)
+        {
+            direction.y = wallSlideSpeed;
+            direction.x *= 0.4f;
+            direction.z *= 0.4f;
         }
         else
         {
-            this.direction.y += this.gravity * Time.deltaTime;
+            direction.y += gravity * Time.deltaTime;
+        }
+
+        Vector3 f = cam.forward; f.y = 0; f.Normalize();
+        Vector3 r = cam.right; r.y = 0; r.Normalize();
+        Vector3 move = f * v + r * h;
+
+        if (move.magnitude > 0.1f)
+        {
+            direction.x = move.x;
+            direction.z = move.z;
+
+            if (lockRotationTimer <= 0)
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(move), Time.deltaTime * 14f);
+        }
+        else if (grounded)
+        {
+            direction.x = 0;
+            direction.z = 0;
+        }
+
+        if (lockRotationTimer > 0) lockRotationTimer -= Time.deltaTime;
+        if (wallTimer > 0) wallTimer -= Time.deltaTime;
+        else if (onWall)
+        {
+            onWall = false;
+            jumpCount = 0;
+        }
+
+        control.Move(direction * speed * Time.deltaTime);
+        Debug.Log(jumpCount);
+    }
+
+    void NormalJump()
+    {
+        jumpResetTimer = jumpChainTime;
+        jumpCount++;
+
+        if (jumpCount == 1)
+            direction.y = Mathf.Sqrt(jump1 * -2f * gravity);
+        else if (jumpCount == 2)
+            direction.y = Mathf.Sqrt(jump2 * -2f * gravity);
+        else
+        {
+            direction.y = Mathf.Sqrt(jump3 * -2f * gravity);
+            jumpCount = 0;
+        }
+    }
+
+    void WallJump()
+    {
+        direction.x = wallNormal.x * wallJumpForce;
+        direction.z = wallNormal.z * wallJumpForce;
+        direction.y = wallJumpUp;
+
+        transform.rotation = Quaternion.LookRotation(wallNormal);
+        lockRotationTimer = 0.12f;
+
+        onWall = false;
+        jumpCount = 0;
+        jumpResetTimer = jumpChainTime;
+    }
+
+    void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (!grounded && hit.gameObject.CompareTag("pared"))
+        {
+            onWall = true;
+            wallNormal = hit.normal;
+            wallTimer = 0.28f;
         }
     }
 }
