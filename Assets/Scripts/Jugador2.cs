@@ -51,7 +51,6 @@ public class Jugador2 : MonoBehaviour
 
         if (Input.GetButtonDown("Jump"))
         {
-            anim.SetTrigger("jump");
             if (onWall && !grounded)
                 WallJump();
             else if (grounded)
@@ -108,6 +107,7 @@ public class Jugador2 : MonoBehaviour
 
     void NormalJump()
     {
+        anim.SetTrigger("jump");
         jumpResetTimer = jumpChainTime;
         jumpCount++;
 
