@@ -25,6 +25,8 @@ public class Jugador2 : MonoBehaviour
     public float wallSlideSpeed = -1.4f;
     private float wallTimer;
 
+    public Animator anim;
+
     void Awake()
     {
         control = GetComponent<CharacterController>();
@@ -34,6 +36,7 @@ public class Jugador2 : MonoBehaviour
     void Update()
     {
         grounded = control.isGrounded;
+        anim.SetBool("isgroun", grounded);
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
@@ -48,6 +51,7 @@ public class Jugador2 : MonoBehaviour
 
         if (Input.GetButtonDown("Jump"))
         {
+            anim.SetTrigger("jump");
             if (onWall && !grounded)
                 WallJump();
             else if (grounded)
@@ -90,9 +94,16 @@ public class Jugador2 : MonoBehaviour
             onWall = false;
             jumpCount = 0;
         }
-
+        if (direction.x != 0f || direction.z != 0f)
+        {
+            anim.SetBool("run", true);
+        }
+        else
+        {
+            anim.SetBool("run", false);
+        }
         control.Move(direction * speed * Time.deltaTime);
-        Debug.Log(jumpCount);
+        Debug.Log(direction);
     }
 
     void NormalJump()
