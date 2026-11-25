@@ -4,9 +4,11 @@ public enum TipoEnemigo { Perseguidor, Patrulla, Parkour }
 
 // Arma el modelo de cada enemigo con figuras basicas y lo anima.
 // Las piezas que se llaman "Cuerpo" son las que cambian de color.
+[DefaultExecutionOrder(-10)] // se arma antes de que el enemigo le cambie el color
 public class ModeloEnemigo : MonoBehaviour
 {
     public TipoEnemigo tipo;
+    public Color colorInicial = Color.gray;
 
     private Transform modelo;
     private Transform piernaIzq;
@@ -128,6 +130,8 @@ public class ModeloEnemigo : MonoBehaviour
 
     void Start()
     {
+        // Si el enemigo esta puesto en la escena, el modelo se arma al empezar
+        if (modelo == null) Armar(colorInicial);
         posicionAnterior = transform.position;
     }
 

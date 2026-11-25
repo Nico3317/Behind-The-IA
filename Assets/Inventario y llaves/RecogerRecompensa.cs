@@ -6,24 +6,26 @@ public class RecogerRecompensa : MonoBehaviour
 
     private bool jugadorCerca = false;
 
-    private void OnTriggerEnter(Collider other)
+    // La llave tiene varios triggers: guardo cuando fue el ultimo contacto para no perderlo al salir de uno solo
+    private float ultimoContacto = -1f;
+
+    public bool JugadorCerca
     {
-        if (other.CompareTag("Player"))
-        {
-            jugadorCerca = true;
-        }
+        get { return jugadorCerca; }
     }
 
-    private void OnTriggerExit(Collider other)
+    private void OnTriggerStay(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            jugadorCerca = false;
+            ultimoContacto = Time.time;
         }
     }
 
     void Update()
     {
+        jugadorCerca = ultimoContacto >= 0f && Time.time - ultimoContacto < 0.15f;
+
         if (jugadorCerca && Input.GetKeyDown(KeyCode.E))
         {
             IntentarRecoger();
