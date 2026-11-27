@@ -25,6 +25,12 @@ public class MenuMuerte : MenuEnJuego
     public void VolverAJugar()
     {
         Time.timeScale = 1f;
+        // Si se guardo o cargo una partida, se vuelve a ese punto; si no, se empieza de nuevo
+        if (SistemaGuardado.RanuraActual >= 0 && SistemaGuardado.PrepararCarga(SistemaGuardado.RanuraActual))
+        {
+            SceneManager.LoadScene(SistemaGuardado.EscenaACargar());
+            return;
+        }
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 

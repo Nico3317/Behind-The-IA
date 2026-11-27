@@ -32,6 +32,18 @@ public class ReaparecerJugador : MonoBehaviour
         if (timerInvulnerable > 0) timerInvulnerable -= Time.deltaTime;
     }
 
+    // Al guardar o cargar una partida, el jugador pasa a reaparecer en ese lugar
+    public void FijarPuntoDeReaparicion(Vector3 posicion)
+    {
+        puntoDeReaparicion = null;
+        posicionInicial = posicion;
+    }
+
+    public void DarInvulnerabilidad()
+    {
+        timerInvulnerable = tiempoInvulnerable;
+    }
+
     public void Reaparecer()
     {
         if (EsInvulnerable || MenuMuerte.Activo) return;

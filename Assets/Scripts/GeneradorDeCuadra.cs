@@ -32,6 +32,8 @@ public class GeneradorDeCuadra : MonoBehaviour
 
     void Start()
     {
+        // Misma semilla para la misma partida: al cargar se regenera la misma ciudad
+        Random.InitState(SistemaGuardado.ObtenerSemillaDeLaPartida());
         GenerarCiudad();
         GenerarEnemigos();
     }

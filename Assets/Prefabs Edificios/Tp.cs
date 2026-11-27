@@ -9,6 +9,9 @@ public class Tp : MonoBehaviour
 
     void Start()
     {
+        // Los edificios se crean desde un prefab y no pueden tener al jugador asignado: lo busco por tag
+        if (ThePlayer == null) ThePlayer = GameObject.FindGameObjectWithTag("Player");
+
         if (ThePlayer != null)
         {
             characterController = ThePlayer.GetComponent<CharacterController>();
